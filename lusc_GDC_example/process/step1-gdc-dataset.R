@@ -69,8 +69,15 @@ id2fls=data.frame(cid=cid,fls=fls)
 save(id2fls,mi_df,fls,cl_df,file = 'tcga_lusc_gdc_miRNA-clinical.Rdata')
 rm(list = ls())
 load(file = 'tcga_lusc_gdc_miRNA-clinical.Rdata')
+dim(mi_df)
+mi_df[1:4,1:4]
+dim(cl_df)
+cl_df[1:4,1:4]
+dim(id2fls)
+head(id2fls)
 
-
-
-
-
+id2fls$cid = as.character(id2fls$cid)
+cl_df2 = as.data.frame(cl_df)
+cl_df2 = cl_df2[,c("bcr_patient_uuid","bcr_patient_barcode")]
+cl_df2$bcr_patient_barcode = as.character(cl_df2$bcr_patient_barcode)
+x  = merge(id2fls,cl_df2, by.x = "cid",by.y = "bcr_patient_uuid")

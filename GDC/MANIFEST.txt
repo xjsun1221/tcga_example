@@ -1,0 +1,3 @@
+id	filename	md5	size	state
+2a8f2c83-8b5e-4987-8dbf-01f7ee24dc26	2a8f2c83-8b5e-4987-8dbf-01f7ee24dc26/TCGA.KIRC.mutect.2a8f2c83-8b5e-4987-8dbf-01f7ee24dc26.DR-10.0.somatic.maf.gz	81b35a38974f46f5d22a5d1444bb0790	7119265	validated
+\N	2a8f2c83-8b5e-4987-8dbf-01f7ee24dc26/annotations.txt	4dcaf5ec9bcbe6437363c7552ca524c3	21250	\N

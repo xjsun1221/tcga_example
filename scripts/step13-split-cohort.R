@@ -16,12 +16,12 @@
 ### https://github.com/jmzeng1314/ML
 
 rm(list=ls())
-load(file = '../Rdata/TCGA_KIRC_mut.Rdata')
-load(file = '../Rdata/TCGA-KIRC-miRNA-example.Rdata')
+load(file = './Rdata/TCGA_KIRC_mut.Rdata')
+load(file = './Rdata/TCGA-KIRC-miRNA-example.Rdata')
 group_list=ifelse(as.numeric(substr(colnames(expr),14,15)) < 10,'tumor','normal')
 
 table(group_list)
-load(file='../Rdata/survival_input.Rdata')
+load(file='./Rdata/survival_input.Rdata')
 
 head(phe)
 exprSet[1:4,1:4]
@@ -81,15 +81,3 @@ perf <- performance(pred,"tpr","fpr")
 performance(pred,"auc") # shows calculated AUC for model
 plot(perf,colorize=FALSE, col="black") # plot ROC curve
 lines(c(0,1),c(0,1),col = "gray", lty = 4 )
-
-
-
-
-
-
-
-
-
-
-
-

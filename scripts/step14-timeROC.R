@@ -18,12 +18,12 @@ rm(list=ls())
 Sys.setenv(R_MAX_NUM_DLLS=999) 
 library(survival)
 library(survminer)
-load(file = '../Rdata/TCGA_KIRC_mut.Rdata')
-load(file = '../Rdata/TCGA-KIRC-miRNA-example.Rdata')
+load(file = './Rdata/TCGA_KIRC_mut.Rdata')
+load(file = './Rdata/TCGA-KIRC-miRNA-example.Rdata')
 group_list=ifelse(as.numeric(substr(colnames(expr),14,15)) < 10,'tumor','normal')
 
 table(group_list)
-load(file='../Rdata/survival_input.Rdata')
+load(file='./Rdata/survival_input.Rdata')
 
 head(phe)
 exprSet[1:4,1:4]

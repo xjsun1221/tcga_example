@@ -14,12 +14,12 @@
 ## 绘图集大成者
 dev.off()
 rm(list=ls())
-load(file = '../Rdata/TCGA_KIRC_mut.Rdata')
-load(file = '../Rdata/TCGA-KIRC-miRNA-example.Rdata')
+load(file = './Rdata/TCGA_KIRC_mut.Rdata')
+load(file = './Rdata/TCGA-KIRC-miRNA-example.Rdata')
 group_list=ifelse(as.numeric(substr(colnames(expr),14,15)) < 10,'tumor','normal')
 
 table(group_list)
-load(file='../Rdata/survival_input.Rdata')
+load(file='./Rdata/survival_input.Rdata')
 ## 挑选感兴趣的miRNA来画表达差异的boxplot
 # 2015-TCGA-ccRCC-5-miRNAs-signatures
 # Integrated genomic analysis identifies subclasses and prognosis signatures of kidney cancer

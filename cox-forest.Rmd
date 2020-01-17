@@ -1,0 +1,161 @@
+---
+title: "cox-forest"
+author: "huahua"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+### 1.准备输入数据
+
+```{r}
+load("forest.Rdata")
+exprSet = expr[,group_list=="tumor"]
+dim(exprSet) ## remove the nomral
+head(meta)
+exprSet[1:4,1:4]
+head(colnames(exprSet))
+head(meta$ID)
+## 必须保证生存资料和表达矩阵，两者一致
+all(substring(colnames(exprSet),1,12)==meta$ID)
+```
+
+### 2.挑选感兴趣的基因构建coxph模型 
+
+出自文章Integrated genomic analysis identifies subclasses and prognosis signatures of kidney cancer中，五个miRNA是miR-21,miR-143,miR-10b,miR-192,miR-183
+
+将他们从表达矩阵中取出来，就得到了5个基因在522个肿瘤样本中的表达量，可作为列添加在meta表噶的后面,组成的数据框赋值给dat。
+
+
+```{r}
+e=t(exprSet[c('hsa-mir-21','hsa-mir-143','hsa-mir-10b','hsa-mir-192','hsa-mir-183'),])
+e=log2(e)
+colnames(e)=c('miR21','miR143','miR10b','miR192','miR183')
+dat=cbind(meta,e)
+dat$gender=factor(dat$gender)
+dat$stage=factor(dat$stage)
+colnames(dat)
+```
+
+用survival::coxph()函数构建模型
+
+```{r}
+library(survival)
+library(survminer)
+s=Surv(time, event) ~ gender + stage + age + miR21+miR143+miR10b+miR192+miR183
+#s=Surv(time, event) ~ miR21+miR143+miR10b+miR192+miR183
+model <- coxph(s, data = dat )
+```
+
+
+### 3.模型可视化-森林图
+
+```{r}
+options(scipen=1)
+ggforest(model, data =dat, 
+         main = "Hazard ratio", 
+         cpositions = c(0.10, 0.22, 0.4), 
+         fontsize = 1.0, 
+         refLabel = "1", noDigits = 4)
+```
+
+### 4.模型预测
+
+```{r }
+fp <- predict(model)
+summary(model,data=dat)$concordance
+library(Hmisc)
+options(scipen=200)
+with(dat,rcorr.cens(fp,Surv(time, event)))
+# 若要找到最佳模型，我们可以进行变量选择，可以采用逐步回归法进行分析
+```
+
+这里只是举个栗子，自己预测自己的C-index是`1-with(dat,rcorr.cens(fp,Surv(time, event)))[[1]]`,实战应该是拿另一个数据集来预测，或者将一个数据集分两半，一半构建模型，一半验证,可以使用机器学习的R包切割数据。
+
+> C-index用于计算生存分析中的COX模型预测值与真实之间的区分度（discrimination），也称为Harrell's concordanceindex。C-index在0.5-1之间。0.5为完全不一致,说明该模型没有预测作用,1为完全一致,说明该模型预测结果与实际完全一致。
+
+### 5.切割数据构建模型并预测
+
+#### 5.1 切割数据
+
+用R包caret切割数据，生成的结果是一组代表列数的数字，用这些数字来给表达矩阵和meta取子集即可。
+
+```{r}
+library(caret)
+set.seed(12345679)
+sam<- createDataPartition(meta$event, p = .5,list = FALSE)
+head(sam)
+```
+
+可查看两组一些临床参数切割比例
+
+```{r}
+train <- exprSet[,sam]
+test <- exprSet[,-sam]
+train_meta <- meta[sam,]
+test_meta <- meta[-sam,]
+
+prop.table(table(train_meta$stage))
+prop.table(table(test_meta$stage)) 
+prop.table(table(test_meta$race)) 
+prop.table(table(train_meta$race)) 
+```
+
+#### 5.2 切割后的train数据集建模
+
+和上面的建模方法一样。
+
+```{r}
+e=t(train[c('hsa-mir-21','hsa-mir-143','hsa-mir-10b','hsa-mir-192','hsa-mir-183'),])
+e=log2(e)
+colnames(e)=c('miR21','miR143','miR10b','miR192','miR183')
+dat=cbind(meta,e)
+dat$gender=factor(dat$gender)
+dat$stage=factor(dat$stage)
+colnames(dat)
+s=Surv(time, event) ~ gender + stage + age + miR21+miR143+miR10b+miR192+miR183
+#s=Surv(time, event) ~ miR21+miR143+miR10b+miR192+miR183
+model <- coxph(s, data = dat )
+```
+
+#### 5.3 模型可视化
+
+```{r}
+options(scipen=1)
+ggforest(model, data =dat, 
+         main = "Hazard ratio", 
+         cpositions = c(0.10, 0.22, 0.4), 
+         fontsize = 1.0, 
+         refLabel = "1", noDigits = 4)
+```
+
+
+
+#### 5.4 用切割后的数据test数据集验证模型
+
+```{r}
+e=t(test[c('hsa-mir-21','hsa-mir-143','hsa-mir-10b','hsa-mir-192','hsa-mir-183'),])
+e=log2(e)
+colnames(e)=c('miR21','miR143','miR10b','miR192','miR183')
+test_dat=cbind(meta,e)
+```
+
+```{r}
+fp <- predict(model)
+summary(model,data=test_dat)$concordance
+library(Hmisc)
+options(scipen=200)
+with(test_dat,rcorr.cens(fp,Surv(time, event)))
+```
+
+C-index为0.7694141，模型还阔以噢。

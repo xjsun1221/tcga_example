@@ -25,12 +25,12 @@ if(F){
   head(a)
   human_geneInfo_genecode_v25=a 
 }
-load('../human_geneInfo_genecode_v25.rda')
+load('./human_geneInfo_genecode_v25.rda')
 b=human_geneInfo_genecode_v25
 head(b)
 tail(sort(table(b$type)))
 lincRNA_genes=b[b$type %in% c('lincRNA','antisense'),'ensembl']
-a=read.table('../Rdata/TCGA-UVM.htseq_counts.tsv.gz',header = T,sep = '\t')
+a=read.table('./Rdata/TCGA-UVM.htseq_counts.tsv.gz',header = T,sep = '\t')
 dim(a)
 a[1:4,1:4]
 library(stringr)

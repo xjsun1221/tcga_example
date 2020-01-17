@@ -1,27 +1,14 @@
-### ---------------
-###
-### Create: Jianming Zeng
-### Date: 2019-04-02 21:59:01
-### Email: jmzeng1314@163.com
-### Blog: http://www.bio-info-trainee.com/
-### Forum:  http://www.biotrainee.com/thread-1376-1-1.html
-### CAFS/SUSTC/Eli Lilly/University of Macau
-### Update Log:   2019-04-02  second version
-###
-### ---------------
-
-## 绘图集大成者。
 dev.off()
 rm(list=ls())
 library(survival)
 library(survminer)
 # 前面使用maftools解析了突变数据，就可以知道各个样本是否有某基因的突变。
-load(file = '../Rdata/TCGA_KIRC_mut.Rdata')
-load(file = '../Rdata/TCGA-KIRC-miRNA-example.Rdata')
+load(file = './Rdata/TCGA_KIRC_mut.Rdata')
+load(file = './Rdata/TCGA-KIRC-miRNA-example.Rdata')
 group_list=ifelse(as.numeric(substr(colnames(expr),14,15)) < 10,'tumor','normal')
 
 table(group_list)
-load(file='../Rdata/survival_input.Rdata')
+load(file='./Rdata/survival_input.Rdata')
 ## 挑选感兴趣的miRNA来画表达差异的boxplot
 # 2015-TCGA-ccRCC-5-miRNAs-signatures
 # Integrated genomic analysis identifies subclasses and prognosis signatures of kidney cancer
@@ -96,8 +83,8 @@ if(require('ggstatsplot')){
 
 if(require('ggplot2')){
   library(ggplot2)
-  ggplot(dat,aes(x=mut,y=gene))+
-    geom_boxplot()+geom_jitter()+geom_violin()+
+  ggplot(dat,aes(x=mut,y=gene))+geom_violin()+
+    geom_boxplot()+geom_jitter()+
     theme_bw()
 }
 

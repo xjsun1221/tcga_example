@@ -1,0 +1,148 @@
+---
+title: "TCGA4.使用RTCGA包获取数据"
+author: "花花"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+
+本系列是我的`TCGA`学习记录，跟着**生信技能树B站课程**学的，已获得授权（嗯，真的^_^）。课程链接：`https://www.bilibili.com/video/av49363776`
+
+目录：
+
+[TCGA-1.数据下载](https://mp.weixin.qq.com/s/Zl8V4qKyY12wfyP-58t3Rg)
+
+[TCGA2.GDC数据整理](https://mp.weixin.qq.com/s/aFq-YQYVvn8vYyOHH1mRiQ)
+
+[TCGA3.R包TCGA-biolinks下载数据]()
+
+从RTCGA包中获取数据，这个包是将TCGA的数据全部下载下来，在R中用代码提取。有一个缺点，就是更新不及时，不是最新的数据。要最新的数据还是gdc下载。
+
+示例是提取了KIRC的miRNA数据和clinical数据。
+
+### 一.安装R包
+
+```{r}
+if (!require(RTCGA))BiocManager::install("RTCGA")
+if (!require(RTCGA.miRNASeq))BiocManager::install("RTCGA.miRNASeq")
+if (!require(RTCGA.clinical))BiocManager::install("RTCGA.clinical")
+```
+
+### 二.miRNAseq数据
+
+RTCGA.miRNASeq 包中存储着各种癌症的miRNA表达信息，可从帮助文档中找到对应数据集名称。
+
+```{r}
+library(RTCGA.miRNASeq)
+#?miRNASeq
+# [1] "ACC.miRNASeq"      "BLCA.miRNASeq"     "BRCA.miRNASeq"    
+# [4] "CESC.miRNASeq"     "CHOL.miRNASeq"     "COAD.miRNASeq"    
+# [7] "COADREAD.miRNASeq" "DLBC.miRNASeq"     "ESCA.miRNASeq"    
+# [10] "FPPP.miRNASeq"     "GBM.miRNASeq"      "GBMLGG.miRNASeq"  
+# [13] "HNSC.miRNASeq"     "KICH.miRNASeq"     "KIPAN.miRNASeq"   
+# [16] "KIRC.miRNASeq"     "KIRP.miRNASeq"     "LAML.miRNASeq"    
+# [19] "LGG.miRNASeq"      "LIHC.miRNASeq"     "LUAD.miRNASeq"    
+# [22] "LUSC.miRNASeq"     "MESO.miRNASeq"     "OV.miRNASeq"      
+# [25] "PAAD.miRNASeq"     "PCPG.miRNASeq"     "PRAD.miRNASeq"    
+# [28] "READ.miRNASeq"     "SARC.miRNASeq"     "SKCM.miRNASeq"    
+# [31] "STAD.miRNASeq"     "STES.miRNASeq"     "TGCT.miRNASeq"    
+# [34] "THCA.miRNASeq"     "THYM.miRNASeq"     "UCEC.miRNASeq"    
+# [37] "UCS.miRNASeq"      "UVM.miRNASeq"    
+```
+
+#### 1.探索KIRC.miRNASeq
+
+```{r}
+KIRC.miRNASeq[1:10,1:4]
+expr1 <- expressionsTCGA(KIRC.miRNASeq)
+dim(expr1)
+expr1[1:10,1:4]
+```
+
+发现
+
+- 从第三列开始是miRNA表达量
+
+-每三行是一个样本的信息；我们只需要read_count。
+
+-expressionsTCGA()函数处理后行名丢失,需要补充回去。
+
+#### 2.整理为表达矩阵
+
+取3-ncol()列，每三行取第一行，补上行名
+
+```{r}
+expr2 = expr1[seq(1, nrow(expr1), by = 3), 3:ncol(expr1)]
+dim(expr2)
+expr2[1:4,1:4]
+#此时表达量均为字符型，改为数值型
+expr2 = apply(expr2, 2, as.numeric)
+#行名补回去
+rownames(expr2) = rownames(KIRC.miRNASeq)[seq(1, nrow(KIRC.miRNASeq), by = 3)]
+expr = t(expr2)
+expr = na.omit(expr)
+expr[1:4,1:4]
+```
+
+#### 3.过滤低表达量的miRNA
+
+有的miRNA在几百个样本中表达量都为零，需去除。过滤的方法不唯一！此处过滤的标准为：**在10个以上样本中表达量>1**，x>1返回逻辑值，sum()函数处理逻辑值向量，返回结果为TRUE的个数。
+
+```{r}
+dim(expr)
+expr = expr[apply(expr, 1, function(x) {
+sum(x > 1) > 10
+}), ]
+dim(expr)
+```
+
+过滤掉了四百多个呐。
+
+### 三.处理临床信息
+
+```{r}
+library(RTCGA.clinical)
+clinical <- KIRC.clinical
+dim(clinical)
+#2809列，吓人了。把列名保存下来，挑里面有用的几列就好
+clinical = clinical[c(
+  'patient.bcr_patient_barcode',
+  'patient.vital_status',
+  'patient.days_to_death',
+  'patient.days_to_last_followup',
+  'patient.race',
+  'patient.age_at_initial_pathologic_diagnosis',
+  'patient.gender' ,
+  'patient.stage_event.pathologic_stage'
+)]
+rownames(clinical) <- NULL
+clinical <- tibble::column_to_rownames(clinical,var = 'patient.bcr_patient_barcode')
+rownames(clinical) <- stringr::str_to_upper(rownames(clinical))
+dim(clinical)
+clinical[1:4,1:4]
+dim(expr)
+expr[1:4,1:4]
+```
+
+### 四.总结
+
+通过RTCGA包，获取到了miRNA表达矩阵和临床信息。
+
+表达矩阵中有593个样本，553个miRNA信息（过滤后的）。临床信息有537个
+
+当然，这个数据集可以下载原始测序数据进行重新比对，可以拿到更多的miRNA信息
+
+
+
+

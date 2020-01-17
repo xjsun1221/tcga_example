@@ -1,37 +1,22 @@
-### ---------------
-###
-### Create: Jianming Zeng
-### Date: 2019-04-02 21:59:01
-### Email: jmzeng1314@163.com
-### Blog: http://www.bio-info-trainee.com/
-### Forum:  http://www.biotrainee.com/thread-1376-1-1.html
-### CAFS/SUSTC/Eli Lilly/University of Macau
-### Update Log:   2019-04-02  second version
-###
-### ---------------
-
-### https://github.com/jmzeng1314/GEO/blob/master/airway/DEG_rnsseq.R
-
 rm(list=ls())
 options(stringsAsFactors = F)
 
-Rdata_dir='../Rdata/'
-Figure_dir='../figures/'
-# 加载上一步从RTCGA.miRNASeq包里面提取miRNA表达矩阵和对应的样本临床信息。
+Rdata_dir='./Rdata/'
+Figure_dir='./figures/'
 load( file = 
         file.path(Rdata_dir,'TCGA-KIRC-miRNA-example.Rdata')
 )
 dim(expr)
 dim(meta)
-# 可以看到是 537个病人，但是有593个样本，每个样本有 552个miRNA信息。
-# 当然，这个数据集可以下载原始测序数据进行重新比对，可以拿到更多的miRNA信息
 
 # 这里需要解析TCGA数据库的ID规律，来判断样本归类问题。
 group_list=ifelse(as.numeric(substr(colnames(expr),14,15)) < 10,'tumor','normal')
 
 table(group_list)
+dim(expr)
 exprSet=na.omit(expr)
-source('../functions.R')
+dim(exprSet)
+source('./functions.R')
 
 ### ---------------
 ###
@@ -145,7 +130,7 @@ if(file.exists(tmp_f)){
 }
 
 
-
+#比较三种方法
 nrDEG1=DEG_limma_voom[,c(1,4)]
 colnames(nrDEG1)=c('log2FoldChange','pvalue') 
 
@@ -155,7 +140,7 @@ colnames(nrDEG2)=c('log2FoldChange','pvalue')
 nrDEG3=DESeq2_DEG[,c(2,6)]
 colnames(nrDEG3)=c('log2FoldChange','pvalue')  
 
-mi=unique(c(rownames(nrDEG1),rownames(nrDEG1),rownames(nrDEG1)))
+mi=unique(c(rownames(nrDEG1),rownames(nrDEG2),rownames(nrDEG3)))
 lf=data.frame(lf1=nrDEG1[mi,1],
               lf2=nrDEG2[mi,1],
               lf3=nrDEG3[mi,1])

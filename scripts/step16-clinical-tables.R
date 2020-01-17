@@ -12,8 +12,8 @@
 
 rm(list=ls()) 
 
-Rdata_dir='../Rdata/'
-Figure_dir='../figures/'
+Rdata_dir='./Rdata/'
+Figure_dir='./figures/'
 f=file.path(Rdata_dir,'TCGA-LUAD-phe_clinical_tables.Rdata')
 
 
