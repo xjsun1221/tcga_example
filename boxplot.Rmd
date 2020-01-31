@@ -1,0 +1,127 @@
+---
+title: "Vignette Title"
+author: "Vignette Author"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+### 0.输入数据
+
+```{r}
+rm(list=ls())
+load(file = "for_boxplot.Rdata")
+```
+
+这里面有三个数据：
+
+expr和meta是miRNA的表达矩阵和临床信息，由GDC下载整理得到。
+
+mut是突变信息，读取maf得到的数据框筛选了几列得到。
+
+在生信星球公众号回复“box”即可获得。也可参照前面的笔记自己获得。
+
+### 1.比较任意miRNA在tumor和normal样本中的表达量
+
+这个只需要表达矩阵，以hsa-mir-143为例画图，可替换为其他任意miRNA。
+
+```{r}
+expr[1:4,1:4]
+group_list=ifelse(as.numeric(substr(colnames(expr),14,15)) < 10,'tumor','normal')
+table(group_list)
+
+library(ggstatsplot)
+dat = data.frame(gene = expr["hsa-mir-143",],
+                 group = group_list)
+ggbetweenstats(data = dat, x = group,  y = gene,title = "hsa-mir-143")
+```
+
+### 2.任意miRNA在任意两个分组中的表达量对比----
+
+只要肿瘤样本,522个，只要是可以根据临床信息查到或得到的分组，例如生死、人种、阶段，都可以拿来做分组。
+
+需要注意调整样本顺序，一一对应。
+
+```{r}
+expf = expr[,as.numeric(substr(colnames(expr),14,15)) < 10]
+library(stringr)
+x1=str_sub(colnames(expf),1,12)
+x2=str_to_upper(meta$patient.bcr_patient_barcode)
+
+table(x2 %in% x1)
+table(x1 %in% x2)
+length(unique(x1))
+
+#发现一个问题，样本的前12位代表病人的编号，列名是有重复的，为了一对一关系，去重复走起
+
+expf = expf[,!duplicated(str_sub(colnames(expf),1,12))]
+x1=str_sub(colnames(expf),1,12)
+x2=str_to_upper(meta$patient.bcr_patient_barcode)
+table(x2 %in% x1)
+meta = meta[x2 %in% x1 ,]
+#按照生死、人种、阶段分组看看
+table(meta$patient.vital_status)
+table(meta$patient.stage_event.pathologic_stage)
+table(meta$patient.race)
+
+dat = data.frame(gene = expf["hsa-mir-143",],
+                 vital_status = meta$patient.vital_status,
+                 stage = meta$patient.stage_event.pathologic_stage,
+                 race = meta$patient.race)
+p1 = ggbetweenstats(data = dat, x = vital_status,  y = gene,title = "hsa-mir-143")
+p2 = ggbetweenstats(data = dat, x = stage,  y = gene,title = "hsa-mir-143")
+p3 = ggbetweenstats(data = dat, x = race,  y = gene,title = "hsa-mir-143")
+library(patchwork)
+p1+p2+p3
+```
+
+### 3.根据某个基因是否突变分组比较某miRNA的表达量
+
+```{r}
+dim(expf)
+head(mut)
+length(unique(str_sub(mut$Tumor_Sample_Barcode,1,12)))
+table(x1 %in% unique(str_sub(mut$Tumor_Sample_Barcode,1,12)))
+#522个样本中有331个有突变信息记录,将这些样本对应的表达矩阵取出来。
+expm = expf[,x1 %in% unique(str_sub(mut$Tumor_Sample_Barcode,1,12))]
+
+VHL_mut=substr(as.character(
+  as.data.frame( mut[mut$Hugo_Symbol=='VHL','Tumor_Sample_Barcode'])[,1] ),
+  1,12)
+
+library(dplyr)
+mut  %>% 
+  filter(Hugo_Symbol=='VHL')  %>%   
+  as.data.frame()  %>% 
+  pull(Tumor_Sample_Barcode)   %>%  
+  as.character()   %>%   
+  substr(1,12)
+
+
+#false 是未突变样本，true是突变样本
+
+tail(rownames(expm))
+dat=data.frame(gene=log2(expm['hsa-mir-98',]),
+               mut= substr(colnames(expm),1,12) %in% VHL_mut)
+
+ggbetweenstats(data = dat, x = mut,  y = gene)
+
+#可以换个方法，直接计算根据某基因突变与否划分的两组之间表达量是否有差异。
+res.aov <- aov(gene ~ as.factor(mut), data = dat)
+summary(res.aov)
+TukeyHSD(res.aov)
+summary(res.aov)[[1]]$`Pr(>F)`[1]
+#可以批量计算，哗啦哗啦的。
+```
+
+

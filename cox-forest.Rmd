@@ -119,7 +119,7 @@ prop.table(table(train_meta$race))
 e=t(train[c('hsa-mir-21','hsa-mir-143','hsa-mir-10b','hsa-mir-192','hsa-mir-183'),])
 e=log2(e)
 colnames(e)=c('miR21','miR143','miR10b','miR192','miR183')
-dat=cbind(meta,e)
+dat=cbind(train_meta,e)
 dat$gender=factor(dat$gender)
 dat$stage=factor(dat$stage)
 colnames(dat)
@@ -147,7 +147,7 @@ ggforest(model, data =dat,
 e=t(test[c('hsa-mir-21','hsa-mir-143','hsa-mir-10b','hsa-mir-192','hsa-mir-183'),])
 e=log2(e)
 colnames(e)=c('miR21','miR143','miR10b','miR192','miR183')
-test_dat=cbind(meta,e)
+test_dat=cbind(test_meta,e)
 ```
 
 ```{r}
@@ -158,4 +158,4 @@ options(scipen=200)
 with(test_dat,rcorr.cens(fp,Surv(time, event)))
 ```
 
-C-index为0.7694141，模型还阔以噢。
+C-index不到0.5， 模型全靠猜了。

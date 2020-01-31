@@ -64,20 +64,4 @@ Heatmap(mat, name = "mat",
         #show_row_names = F,
         show_column_names = F)
 
-# Determine the signatures contributing to the two example samples
-if(F){
-  lapply(unique(a$Sample), function(i){
-    i = "TCGA-B8-4622-01A-02D-1553-08"
-    ## signatures.cosmic signatures.nature2013
-    sample_1 = whichSignatures(tumor.ref = sigs.input, 
-                               signatures.ref = signatures.cosmic, 
-                               sample.id =  i, 
-                               contexts.needed = TRUE,
-                               tri.counts.method = 'default')
-    #pdf(paste0(i,'.sig.pdf'))
-    plotSignatures(sample_1, sub = i)
-    dev.off()
-  })
-}
-
 
